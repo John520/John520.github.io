@@ -24,12 +24,12 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="go&#x2F;analysis使用及linter入门">
 <meta property="og:url" content="http://john520.github.io/2022/04/04/go-analysis%E4%BD%BF%E7%94%A8%E5%8F%8Alinter%E5%85%A5%E9%97%A8/index.html">
-<meta property="og:site_name" content="Hexo">
+<meta property="og:site_name" content="John520">
 <meta property="og:description" content="本文至译文，原文件下面的参考文章，主要介绍从0-1 开发自定义的linter，并集成至go vet 和golangci-lint，废话不多说，请看下文 前言我们今天将在go 语言中使用go&#x2F;analysis来编写一个有用的linter，然后可以集成至go vet 和golangci-lint 什么是 lint让我们找到所有没有以f 结尾的printf风格的方法，在go语言中，惯例使用f结尾的方法名">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2022-04-04T13:19:07.000Z">
 <meta property="article:modified_time" content="2022-04-04T14:00:08.804Z">
-<meta property="article:author" content="John Doe">
+<meta property="article:author" content="John">
 <meta property="article:tag" content="原创">
 <meta property="article:tag" content="golangci-lint">
 <meta name="twitter:card" content="summary">
@@ -42,7 +42,7 @@
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"http://john520.github.io/2022/04/04/go-analysis%E4%BD%BF%E7%94%A8%E5%8F%8Alinter%E5%85%A5%E9%97%A8/","path":"2022/04/04/go-analysis使用及linter入门/","title":"go/analysis使用及linter入门"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>go/analysis使用及linter入门 | Hexo</title>
+<title>go/analysis使用及linter入门 | John520</title>
   
 
 
@@ -69,9 +69,10 @@
 
     <a href="/" class="brand" rel="start">
       <i class="logo-line"></i>
-      <p class="site-title">Hexo</p>
+      <p class="site-title">John520</p>
       <i class="logo-line"></i>
     </a>
+      <p class="site-subtitle" itemprop="description">John的个人博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -116,8 +117,8 @@
 
         <div class="site-overview-wrap sidebar-panel">
           <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name">John Doe</p>
-  <div class="site-description" itemprop="description"></div>
+  <p class="site-author-name" itemprop="name">John</p>
+  <div class="site-description" itemprop="description">不积跬步无以至千里</div>
 </div>
 <div class="site-state-wrap site-overview-item animated">
   <nav class="site-state">
@@ -175,16 +176,16 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="John Doe">
+      <meta itemprop="name" content="John">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hexo">
-      <meta itemprop="description" content="">
+      <meta itemprop="name" content="John520">
+      <meta itemprop="description" content="不积跬步无以至千里">
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="go/analysis使用及linter入门 | Hexo">
+      <meta itemprop="name" content="go/analysis使用及linter入门 | John520">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
@@ -365,7 +366,7 @@
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">John Doe</span>
+  <span class="author" itemprop="copyrightHolder">John</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
   </div>
@@ -390,7 +391,7 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css" integrity="sha256-AJnUHL7dBv6PGaeyPQJcgQPDjt/Hn/PvYZde1iqfp8U=" crossorigin="anonymous">
 
-<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"John520","repo":"John520.github.io","client_id":"54a4cb080d437236849d","client_secret":"13d533fbb1c2ee8333416ca972c720b84782dc9c","admin_user":"John520","distraction_free_mode":false,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"zh-CN","js":{"url":"https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js","integrity":"sha256-Pmj85ojLaPOWwRtlMJwmezB/Qg8BzvJp5eTzvXaYAfA="},"path_md5":"9bfaab84e53c742722745bd26d28e392"}</script>
+<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"John520","repo":"John520","client_id":"54a4cb080d437236849d","client_secret":"13d533fbb1c2ee8333416ca972c720b84782dc9c","admin_user":"John520","distraction_free_mode":false,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"zh-CN","js":{"url":"https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js","integrity":"sha256-Pmj85ojLaPOWwRtlMJwmezB/Qg8BzvJp5eTzvXaYAfA="},"path_md5":"9bfaab84e53c742722745bd26d28e392"}</script>
 <script src="/js/third-party/comments/gitalk.js"></script>
 
 </body>

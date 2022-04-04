@@ -24,7 +24,7 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="golang性能利器-pprof">
 <meta property="og:url" content="http://john520.github.io/2022/04/04/golang%E6%80%A7%E8%83%BD%E5%88%A9%E5%99%A8-pprof/index.html">
-<meta property="og:site_name" content="Hexo">
+<meta property="og:site_name" content="John520">
 <meta property="og:description" content="前言作为一名gopher,不知道你是否遇到过以下问题？  CPU突然飙高(甚至死循环,CPU跑满)？ 某个功能接口QPS在压测中一直压不上去？ 应用出现goroutine泄露？ 内存居高不下？ 在某处加锁的逻辑中，迟迟得不到锁？  你是否能得心应手的找到问题的症结所在，你又是使用什么方法或工具解决的呢？今天我将介绍下我经常使用的工具pprof.它是golang自带的性能分析大杀器，基本上能快速解决">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy7k74ec7gj20ve064aap.jpg">
@@ -44,7 +44,7 @@
 <meta property="og:image" content="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy8z7cdre6j21560scjwy.jpg">
 <meta property="article:published_time" content="2022-04-04T14:23:54.000Z">
 <meta property="article:modified_time" content="2022-04-04T14:28:52.204Z">
-<meta property="article:author" content="John Doe">
+<meta property="article:author" content="John">
 <meta property="article:tag" content="原创">
 <meta property="article:tag" content="golang">
 <meta name="twitter:card" content="summary">
@@ -58,7 +58,7 @@
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"http://john520.github.io/2022/04/04/golang%E6%80%A7%E8%83%BD%E5%88%A9%E5%99%A8-pprof/","path":"2022/04/04/golang性能利器-pprof/","title":"golang性能利器-pprof"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>golang性能利器-pprof | Hexo</title>
+<title>golang性能利器-pprof | John520</title>
   
 
 
@@ -85,9 +85,10 @@
 
     <a href="/" class="brand" rel="start">
       <i class="logo-line"></i>
-      <p class="site-title">Hexo</p>
+      <p class="site-title">John520</p>
       <i class="logo-line"></i>
     </a>
+      <p class="site-subtitle" itemprop="description">John的个人博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -132,8 +133,8 @@
 
         <div class="site-overview-wrap sidebar-panel">
           <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name">John Doe</p>
-  <div class="site-description" itemprop="description"></div>
+  <p class="site-author-name" itemprop="name">John</p>
+  <div class="site-description" itemprop="description">不积跬步无以至千里</div>
 </div>
 <div class="site-state-wrap site-overview-item animated">
   <nav class="site-state">
@@ -191,16 +192,16 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="John Doe">
+      <meta itemprop="name" content="John">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hexo">
-      <meta itemprop="description" content="">
+      <meta itemprop="name" content="John520">
+      <meta itemprop="description" content="不积跬步无以至千里">
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="golang性能利器-pprof | Hexo">
+      <meta itemprop="name" content="golang性能利器-pprof | John520">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
@@ -378,7 +379,7 @@
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">John Doe</span>
+  <span class="author" itemprop="copyrightHolder">John</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
   </div>
@@ -403,7 +404,7 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css" integrity="sha256-AJnUHL7dBv6PGaeyPQJcgQPDjt/Hn/PvYZde1iqfp8U=" crossorigin="anonymous">
 
-<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"John520","repo":"John520.github.io","client_id":"54a4cb080d437236849d","client_secret":"13d533fbb1c2ee8333416ca972c720b84782dc9c","admin_user":"John520","distraction_free_mode":false,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"zh-CN","js":{"url":"https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js","integrity":"sha256-Pmj85ojLaPOWwRtlMJwmezB/Qg8BzvJp5eTzvXaYAfA="},"path_md5":"d20bc26a21e59ea1165a322d390f6f78"}</script>
+<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"John520","repo":"John520","client_id":"54a4cb080d437236849d","client_secret":"13d533fbb1c2ee8333416ca972c720b84782dc9c","admin_user":"John520","distraction_free_mode":false,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"zh-CN","js":{"url":"https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js","integrity":"sha256-Pmj85ojLaPOWwRtlMJwmezB/Qg8BzvJp5eTzvXaYAfA="},"path_md5":"d20bc26a21e59ea1165a322d390f6f78"}</script>
 <script src="/js/third-party/comments/gitalk.js"></script>
 
 </body>
