@@ -71,123 +71,6 @@
       <div class="outer">
         <section id="main">
   
-    <article id="post-golang性能利器-pprof" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2022/04/04/golang%E6%80%A7%E8%83%BD%E5%88%A9%E5%99%A8-pprof/" class="article-date">
-  <time class="dt-published" datetime="2022-04-04T14:15:09.020Z" itemprop="datePublished">2022-04-04</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>作为一名gopher,不知道你是否遇到过以下问题？</p>
-<ol>
-<li>CPU突然飙高(甚至死循环,CPU跑满)？</li>
-<li>某个功能接口QPS在压测中一直压不上去？</li>
-<li>应用出现goroutine泄露？</li>
-<li>内存居高不下？</li>
-<li>在某处加锁的逻辑中，迟迟得不到锁？</li>
-</ol>
-<p>你是否能得心应手的找到问题的症结所在，你又是使用什么方法或工具解决的呢？今天我将介绍下我经常使用的工具pprof.它是golang自带的性能分析大杀器，基本上能快速解决上述问题。</p>
-<h1 id="如何使用pprof"><a href="#如何使用pprof" class="headerlink" title="如何使用pprof"></a>如何使用pprof</h1><p>使用pprof有三种姿势，一种是使用<code>runtime/pprof/pprof.go</code>另一种是使用<code>net/http/pprof/pprof.go</code>（底层也是使用<code>runtime/pprof</code>）,还有一种是在单元测试中生成profile 数据。详细的方法在对应的<code>pprof.go</code>文件开头有说明。</p>
-<h2 id="1-runtime-x2F-pprof-方式pprof"><a href="#1-runtime-x2F-pprof-方式pprof" class="headerlink" title="1. runtime&#x2F;pprof 方式pprof"></a>1. runtime&#x2F;pprof 方式pprof</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;flag&quot;</span></span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line">	<span class="string">&quot;runtime&quot;</span></span><br><span class="line">	<span class="string">&quot;runtime/pprof&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> cpuprofile = flag.String(<span class="string">&quot;cpuprofile&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="string">&quot;write cpu profile to `file`&quot;</span>)</span><br><span class="line"><span class="keyword">var</span> memprofile = flag.String(<span class="string">&quot;memprofile&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="string">&quot;write memory profile to `file`&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	flag.Parse()</span><br><span class="line">	<span class="keyword">if</span> *cpuprofile != <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">		f, err := os.Create(*cpuprofile)</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			log.Fatal(<span class="string">&quot;could not create CPU profile: &quot;</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">defer</span> f.Close() <span class="comment">// error handling omitted for example</span></span><br><span class="line">		<span class="keyword">if</span> err := pprof.StartCPUProfile(f); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			log.Fatal(<span class="string">&quot;could not start CPU profile: &quot;</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">defer</span> pprof.StopCPUProfile()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ... rest of the program ...</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> *memprofile != <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">		f, err := os.Create(*memprofile)</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			log.Fatal(<span class="string">&quot;could not create memory profile: &quot;</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">defer</span> f.Close() <span class="comment">// error handling omitted for example</span></span><br><span class="line">		runtime.GC()    <span class="comment">// get up-to-date statistics</span></span><br><span class="line">		<span class="keyword">if</span> err := pprof.WriteHeapProfile(f); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			log.Fatal(<span class="string">&quot;could not write memory profile: &quot;</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>这种方式需要你手动启动需要pprof的类型，比如，开启CPU profile 还是heap profile 等等，pprof 会在应用启动到结束的整个生命周期生成profile 文件。其实生成profile 数据是会损耗性能的，生产环境不建议一直开启，可以在需要分析的时候临时采集那个时刻的数据，如通过监听系统信号的方式开启&#x2F;关闭pprof,示例代码如下：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;flag&quot;</span></span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line">	<span class="string">&quot;runtime&quot;</span></span><br><span class="line">	<span class="string">&quot;runtime/pprof&quot;</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">var</span> cpuprofile = flag.String(<span class="string">&quot;cpuprofile&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="string">&quot;write cpu profile to `file`&quot;</span>)</span><br><span class="line"><span class="keyword">var</span> memprofile = flag.String(<span class="string">&quot;memprofile&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="string">&quot;write memory profile to `file`&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">signalStopPprof</span><span class="params">(f *os.File)</span></span> &#123;</span><br><span class="line">	c := <span class="built_in">make</span>(<span class="keyword">chan</span> os.Signal, <span class="number">1</span>)</span><br><span class="line">	signal.Notify(c, syscall.SIGUSR2)</span><br><span class="line">	<span class="keyword">for</span> _ = <span class="keyword">range</span> c &#123;</span><br><span class="line">		pprof.StopCPUProfile()</span><br><span class="line">		log.Println(<span class="string">&quot;stop  profile&quot;</span>)</span><br><span class="line">		_ = f.Close()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">signalStartPprof</span><span class="params">(f *os.File)</span></span> &#123;</span><br><span class="line">	c := <span class="built_in">make</span>(<span class="keyword">chan</span> os.Signal, <span class="number">1</span>)</span><br><span class="line">	signal.Notify(c, syscall.SIGUSR1)</span><br><span class="line">	<span class="keyword">for</span> _ = <span class="keyword">range</span> c &#123;</span><br><span class="line">		_ = f.Truncate(<span class="number">0</span>)</span><br><span class="line">		<span class="keyword">if</span> err := pprof.StartCPUProfile(f); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			log.Println(<span class="string">&quot;could not start CPU profile: &quot;</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	flag.Parse()</span><br><span class="line">	<span class="keyword">if</span> *cpuprofile != <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">		f, err := os.Create(*cpuprofile)</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			log.Fatal(<span class="string">&quot;could not create CPU profile: &quot;</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">			signalStartPprof(f)</span><br><span class="line">		&#125;()</span><br><span class="line">		<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">			signalStopPprof(f)</span><br><span class="line">		&#125;()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// ... rest of the program ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>不过本人还是更加喜欢第二种方式<code>net/http/pprof</code></p>
-<h2 id="2-net-x2F-http-x2F-pprof-方式pprof"><a href="#2-net-x2F-http-x2F-pprof-方式pprof" class="headerlink" title="2. net&#x2F;http&#x2F;pprof 方式pprof"></a>2. net&#x2F;http&#x2F;pprof 方式pprof</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line">	<span class="string">&quot;net/http&quot;</span></span><br><span class="line">	_ <span class="string">&quot;net/http/pprof&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		log.Println(http.ListenAndServe(<span class="string">&quot;localhost:6060&quot;</span>, <span class="literal">nil</span>))</span><br><span class="line">	&#125;()</span><br><span class="line">  <span class="comment">// ... rest of the program ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>是不是很简单，这种方式只需要开启http服务，并且<code>import _ &quot;net/http/pprof&quot;</code>,他会自动把相应的http的handleFunc 注册上去，若你使用的不是<code>DefaultServeMux</code>,需要自己手动注册下。</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">init</span><span class="params">()</span></span> &#123;</span><br><span class="line">	http.HandleFunc(<span class="string">&quot;/debug/pprof/&quot;</span>, Index)</span><br><span class="line">	http.HandleFunc(<span class="string">&quot;/debug/pprof/cmdline&quot;</span>, Cmdline)</span><br><span class="line">	http.HandleFunc(<span class="string">&quot;/debug/pprof/profile&quot;</span>, Profile)</span><br><span class="line">	http.HandleFunc(<span class="string">&quot;/debug/pprof/symbol&quot;</span>, Symbol)</span><br><span class="line">	http.HandleFunc(<span class="string">&quot;/debug/pprof/trace&quot;</span>, Trace)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="3-单元测试中进行profile"><a href="#3-单元测试中进行profile" class="headerlink" title="3. 单元测试中进行profile"></a>3. 单元测试中进行profile</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">go</span> test -cpuprofile cpu.prof -memprofile mem.prof -bench .</span><br></pre></td></tr></table></figure>
-
-<h1 id="分析pprof"><a href="#分析pprof" class="headerlink" title="分析pprof"></a>分析pprof</h1><p>在上文<a href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8pprof">如何使用pprof</a>中介绍的三种开启pprof的方式，他们都会生成profile二进制文件，有三种方式可以分析这个二进制文件</p>
-<ol>
-<li><p>姿势一：通过交互命令行,方法：<code>go tool pprof &#123;profile文件&#125;</code></p>
-<p>若是通过http方式开启pprof，可以</p>
-<p><code>go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30</code></p>
-<p>若是通过方式1和3生成文件,可以</p>
-<p><code>go tool pprof cpu.prof</code></p>
-<p>命令交互行如下<img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy7k74ec7gj20ve064aap.jpg" alt="pprof.jpg"></p>
-</li>
-<li><p>姿势二：通过web方式查看，方法 <code>go tool pprof -http=:6060 &#123;profile文件&#125;</code></p>
-<p>然后就可以在浏览器中访问 <a target="_blank" rel="noopener" href="http://localhost:6060/">http://localhost:6060/</a> </p>
-<p>当然也有一种方式在姿势一中介绍的命令行交互中输入<code>web</code>会生成 .svg文件，不过需要安装graphviz来打开这个文件，不推荐，还是建议使用命令行或本地启动web服务来查看profile 数据.</p>
-</li>
-</ol>
-<h1 id="实战演练"><a href="#实战演练" class="headerlink" title="实战演练"></a>实战演练</h1><h2 id="1-定位CPU问题"><a href="#1-定位CPU问题" class="headerlink" title="1.定位CPU问题"></a>1.定位CPU问题</h2><p>自己写了一个模拟程序，模拟CPU问题，</p>
-<p>按照上述姿势一打开命令行交互，执行<code>top10</code>,输出采样期间CPU使用最高的10个方法</p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy7mugw0vjj20x40hotdq.jpg" alt="image.png"></p>
-<p>这里简单介绍下flat flat% sum% cum cum%这五个参数的含义,详细可以查看<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/32571396/pprof-and-golang-how-to-interpret-a-results">Pprof and golang - how to interpret a results?</a></p>
-<p>flat：指的是该方法所占用的CPU时间（不包含这个方法中调用其他方法所占用的时间）</p>
-<p>flat%: 指的是该方法flat时间占全部采样时间的比例</p>
-<p>cum：指的是该方法以及方法中调用其他方法所占用的CPU时间总和，这里注意区别于flat</p>
-<p>cum%:指的是该方法cum时间占全部采样时间的比例</p>
-<p>sum%: 指的是执行到当前方法累积占用的CPU时间总和，也即是前面flat%总和</p>
-<p>上图可以看出worker()占用CPU时间较久，我们可以<code>list main.worker</code>查看具体代码<br><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy7nf6zxjaj21ja0qqdln.jpg" alt="image.png"></p>
-<p>当然也可以通过上述姿势二，启动web服务查看火焰图<code>go tool pprof -http=:6061 cpu.profile </code></p>
-<p>打开<a target="_blank" rel="noopener" href="http://localhost:6061/ui/">http://localhost:6061/ui/</a> 火焰图如下，其中颜色越红代表占用的CPU时间越多</p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy7nl73p3xj20yg18i11r.jpg" alt="image.png"></p>
-<p>找到了耗时比较久的地方，就能看看正常的业务代码还是可以优化的逻辑，就可以优化后在pprof</p>
-<h2 id="2-定位内存问题"><a href="#2-定位内存问题" class="headerlink" title="2. 定位内存问题"></a>2. 定位内存问题</h2><p>排查内存再用过高问题</p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy7te6d0fij21je0f6qbr.jpg" alt="image.png"></p>
-<p>其中<code>inuse_space</code>表示查看常驻内存的使用情况</p>
-<p>list 查看相应的函数</p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy7t6d59b3j21bg0iytcm.jpg" alt="image.png"></p>
-<p>原来是一致在append内存，并持有到1GB不释放</p>
-<p>当然还可以使用<code>alloc_objects</code>：分析应用程序的内存临时分配情况</p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy7tlk3i02j21iq0kcn7w.jpg" alt="image.png"></p>
-<p>可以看到应用稳定后，除了上面初始分配1GB外，应用临时内存分配主要在worker中</p>
-<h2 id="3-定位goroutine问题"><a href="#3-定位goroutine问题" class="headerlink" title="3.定位goroutine问题"></a>3.定位goroutine问题</h2><p>例如goroutine泄露等问题，方法如下</p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy7u104p52j21eg0gq7d0.jpg" alt="image.png"></p>
-<p>可以打出各个goroutine的调用栈</p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy7u4p0of3j20wa104n3o.jpg" alt="image.png"></p>
-<p>可以看到有900+ 的goroutine 阻塞在<code>runtime/gopark</code>并且是由<code>main.goroutine.fun1</code>方法引起的 list 查看方法内容<code>list main.goroutine.fun1</code></p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy7u7qv0hfj21cm0i4tc1.jpg" alt="image.png"></p>
-<p>可以看出主要是阻塞在channel c 上.当然也可以通过<code>traces runtime.gopark </code>查看那些方法最终阻塞在<code>gopark</code>上，另外也可以在web页面<a target="_blank" rel="noopener" href="http://localhost:6060/debug/pprof/goroutine?debug=1%E7%9B%B4%E6%8E%A5%E6%9F%A5%E7%9C%8B%E3%80%82">http://localhost:6060/debug/pprof/goroutine?debug=1直接查看。</a></p>
-<h2 id="4-定位锁问题"><a href="#4-定位锁问题" class="headerlink" title="4.定位锁问题"></a>4.定位锁问题</h2><p>锁的问题可能导致程序运行缓慢，pprof mutex 相关的需要设置采样率</p>
-<p><code>runtime.SetMutexProfileFraction(1)</code>,若采样率&lt;0 将不进行采样</p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy8ynn7v28j21ce0e6wmj.jpg" alt="image.png"></p>
-<p>可以看出，主要在<code>main.mutex.func1</code>上，可以查看调用链</p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy8yomftwzj20x00jg0w1.jpg" alt="image.png"></p>
-<p><code>list main.mutex.func1</code></p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy8ypmn2axj21dq0fmtbh.jpg" alt="image.png"></p>
-<p>可以看出主要阻塞在锁<code>m</code>上</p>
-<h2 id="5-定位goroutine阻塞等待同步问题"><a href="#5-定位goroutine阻塞等待同步问题" class="headerlink" title="5. 定位goroutine阻塞等待同步问题"></a>5. 定位goroutine阻塞等待同步问题</h2><p>区别于4 ，这里主要是记录goroutine阻塞等待同步的位置,而4中主要是互斥锁分析，报告互斥锁的竞争情况。同样需要设置采样率<code>runtime.SetBlockProfileRate(1)</code></p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy8z65fl7ej21cw0ka12i.jpg" alt="image.png"></p>
-<p>主要主色在chanrecv1上，查看源码</p>
-<p><img src="http://tva1.sinaimg.cn/large/8dfd1ceegy1gy8z7cdre6j21560scjwy.jpg" alt="image.png"></p>
-<p>可以发现主要阻塞在channel c 上</p>
-<h1 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h1><p>上面已经一步一步演示了一遍常见应用性能问题，以及如何分析定位，后面将写下这些分析数据背后是如何采集，原理是什么。</p>
-<p>最后附上本次测试源码<a target="_blank" rel="noopener" href="https://github.com/John520/pprof-project.git">https://github.com/John520/pprof-project.git</a></p>
-<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><ol>
-<li><a target="_blank" rel="noopener" href="https://github.com/google/pprof/blob/master/doc/README.md">pprof 官方README</a></li>
-<li><a target="_blank" rel="noopener" href="https://go.dev/blog/pprof">Profiling Go Programs</a></li>
-<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000016412013">Golang 大杀器之性能剖析 PProf</a></li>
-<li><a target="_blank" rel="noopener" href="https://blog.wolfogre.com/posts/go-ppof-practice/">golang pprof 实战</a></li>
-<li><a target="_blank" rel="noopener" href="https://golang2.eddycjy.com/posts/ch6/01-pprof-1/">https://golang2.eddycjy.com/posts/ch6/01-pprof-1/</a></li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2022/04/04/golang%E6%80%A7%E8%83%BD%E5%88%A9%E5%99%A8-pprof/" data-id="cl1ksoiww00016bnb88h0hdmb" data-title="" class="article-share-link">Share</a>
-      
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
     <article id="post-hello-world" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2022/04/04/hello-world/" class="article-date">
@@ -227,7 +110,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2022/04/04/hello-world/" data-id="cl1ksoix000046bnb6h6ya6fc" data-title="Hello World" class="article-share-link">Share</a>
+      <a data-url="http://example.com/2022/04/04/hello-world/" data-id="cl1kt3r760001wenb96fn3574" data-title="Hello World" class="article-share-link">Share</a>
       
       
       
@@ -364,7 +247,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2022/04/04/go-analysis%E4%BD%BF%E7%94%A8%E5%8F%8Alinter%E5%85%A5%E9%97%A8/" data-id="cl1ksoiwr00006bnb276dhwt5" data-title="go/analysis使用及linter入门" class="article-share-link">Share</a>
+      <a data-url="http://example.com/2022/04/04/go-analysis%E4%BD%BF%E7%94%A8%E5%8F%8Alinter%E5%85%A5%E9%97%A8/" data-id="cl1kt3r710000wenb5f682r0m" data-title="go/analysis使用及linter入门" class="article-share-link">Share</a>
       
       
       
@@ -428,10 +311,6 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
-        
-          <li>
-            <a href="/2022/04/04/golang%E6%80%A7%E8%83%BD%E5%88%A9%E5%99%A8-pprof/">(no title)</a>
-          </li>
         
           <li>
             <a href="/2022/04/04/hello-world/">Hello World</a>
